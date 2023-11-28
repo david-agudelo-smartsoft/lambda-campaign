@@ -1,13 +1,15 @@
 import OutboundCampaign from '../models/campaign.model.js';
+import { ObjectId } from 'mongodb';
 
 export const getCampaign = async (req, res) => {
     try {
-        const { initDate, finalDate } = req.body;
+        const {projectId,initDate, finalDate } = req.body;
 
         const result = await OutboundCampaign.aggregate([
             {
                 $match: {
                     $and: [
+                        { project: new ObjectId(projectId) },
                         { updatedAt: { $gte: new Date(initDate) } },
                         { updatedAt: { $lte: new Date(finalDate) } },
                     ],

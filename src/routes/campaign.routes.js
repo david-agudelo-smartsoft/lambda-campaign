@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { getCampaign, getCampaignGroup } from '../controllers/campaign.controller.js'
 const router = Router()
 
-router.get('/campaign', getCampaign);
+router.post('/campaign-dashboard', getCampaign);
 router.get('/campaignGroup', getCampaignGroup);
 
 

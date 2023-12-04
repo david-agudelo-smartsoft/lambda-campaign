@@ -189,3 +189,59 @@ export const getCampaign = async (req, res) => {
     return res.status(500).json({ message: error.message });
   }
 };
+
+export const createTemplateText = async (req, res) => {
+
+  try {
+
+    
+  const {
+    languageCode,
+    content,
+    category,
+    templateType,
+    elementName,
+    exampleHeader,
+    example,
+    vertical,
+  } = req.body;
+
+  const requestData = {
+    languageCode,
+    content,
+    category,
+    templateType,
+    elementName,
+    exampleHeader,
+    example,
+    vertical,
+    mediaId,
+    exampleMedia,
+  };
+
+  
+  console.log(req.body);
+  const requestBody = qs.stringify(requestData);
+  
+  // Realizar la solicitud a la API externa utilizando Axios
+  const apiResponse = await axios.post(
+    'https://api.gupshup.io/wa/app/e16ef554-0930-4b6e-88bd-6e948ce5f78a/template',
+    requestBody,
+    {
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'apikey': 'bbcms7lbqmxe70qy89kj1jxcfmnjfaze'
+      }
+    }
+  );
+
+  res.json(200),(apiResponse.data)
+    
+  } catch (error) {
+
+    console.error('Error al realizar la solicitud a la API externa:', error);
+    res.status(500).json({ error: 'Error interno del servidor' });
+    
+  }
+
+}

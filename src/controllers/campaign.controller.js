@@ -50,12 +50,14 @@ export const getCampaignGroup = async (req, res) => {
           "TOTAL" : "$total",
           "PENDING" : "$pending",
           "FAILED_SEND" : "$failed",
-          "SUCCESFULLY_SEND" : "$send",
-          "CHANELL_PENDING" : "$channelPending",
-          "CHANELL_SENT" : "$channelSent",
-          "CHANELL_FAILED" : "$channelFailed",
-          "CHANELL_DELIVERED" : "$channelDelivered",
-          "CHANELL_READ" : "$channelRead",
+          "SUCCESFULLY_SEND": {
+            "chanell_send": "$send",
+            "chanell_pending": "$channelPending",
+            "chanell_sent": "$channelSent",
+            "chanell_failed": "$channelFailed",
+            "chanell_delivered": "$channelDelivered",
+            "chanell_read": "$channelRead",
+        },
       }}
 
     ]).limit(20);

@@ -194,7 +194,6 @@ export const createTemplateText = async (req, res) => {
 
   try {
 
-    
   const {
     languageCode,
     content,

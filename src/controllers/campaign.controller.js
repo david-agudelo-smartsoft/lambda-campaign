@@ -284,6 +284,13 @@ export const getCampaignDetails = async (req, res) => {
   try {
     const { initDate, finalDate, status } = req.body;
 
+    let queryStatus;
+
+    if (status) {
+      queryStatus = [status];
+    } else {
+      queryStatus = ["sent", "failed", "delivered", "read"];
+    }
     const result = await OutboundCampaign.aggregate([
       {
         $match: {
@@ -370,11 +377,12 @@ export const getCampaignDetails = async (req, res) => {
       },
       {
         $match: {
-          channelCheck: status,
+          channelCheck: {
+            $in: queryStatus,
+          },
         },
       },
     ]);
-
     res.json(result);
   } catch (error) {
     return res.status(500).json({ message: error.message });

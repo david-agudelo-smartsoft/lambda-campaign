@@ -11,9 +11,10 @@ export const postTemplateText = async (req) => {
         elementName,
         exampleHeader,
         example,
-        vertical
-      } = req.body.campaignTemplate;
-      console.log(req.body.campaignTemplate);
+        vertical,
+        allowTemplateCategoryChange,
+      } = req.body.campaignTemplate.variables;
+      console.log(req.body.campaignTemplate.variables);
   
       const apiResponse = await axios.post(
         "https://api.gupshup.io/wa/app/e16ef554-0930-4b6e-88bd-6e948ce5f78a/template",
@@ -26,6 +27,8 @@ export const postTemplateText = async (req) => {
           exampleHeader,
           example,
           vertical,
+          allowTemplateCategoryChange,
+
         },
   
         {
@@ -61,15 +64,18 @@ export const postTemplateText = async (req) => {
             headers: {
               "Content-Type": "application/json",
               Authorization:
-                "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJfaWQiOiI2NTI0NjZiNzkzOGEyZDAwMTM4NjQzM2EiLCJuYW1lIjp7ImZpcnN0TmFtZSI6ImFkbWluIiwibGFzdE5hbWUiOiIyIn0sInJvbGUiOiJBRE1JTiIsImNvbXBhbnkiOiI2MGFkNzAxNjU3YjRmZTAwMTNkNGQ2ZTkiLCJsYXN0TG9naW4iOiIyMDIzLTEyLTA1VDE2OjM3OjU3Ljc1NFoiLCJmaXJzdExvZ2luIjpmYWxzZSwiaWF0IjoxNzAxNzk0Mjc3LCJleHAiOjE3MDE4ODA2Nzd9.RX6ThUpvmjrci19ao7HYFYcL8LvhAe0MEzJwfCF4JpI",
+                "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJfaWQiOiI2NTI0NjZiNzkzOGEyZDAwMTM4NjQzM2EiLCJuYW1lIjp7ImZpcnN0TmFtZSI6ImFkbWluIiwibGFzdE5hbWUiOiIyIn0sInJvbGUiOiJBRE1JTiIsImNvbXBhbnkiOiI2MGFkNzAxNjU3YjRmZTAwMTNkNGQ2ZTkiLCJsYXN0TG9naW4iOiIyMDIzLTEyLTE0VDE1OjI1OjM5LjgzNloiLCJmaXJzdExvZ2luIjpmYWxzZSwiaWF0IjoxNzAyNTY3NTQwLCJleHAiOjE3MDI2NTM5NDB9.33hULgQlIQ6FUL3ZcoglqPM32zZ0yfnI9NjN9VZAEXA",
               // Otras cabeceras necesarias para la segunda API
             },
           }
         );
+        
       } else {
-       console.log("La primera API respondió con un error:", apiResponse.data.error)
       }
+      console.log("La segunda API respondió:", secondApiResponse.data);
+
     } catch (error) {
+
      
       
     }

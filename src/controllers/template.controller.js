@@ -1,6 +1,7 @@
 import axios from "axios";
 import qs from "querystring";
 import fs from "fs";
+import campaignTemplate from "../models/campaign.model.js";
 
 export const postTemplateText = async (req) => {
   try {
@@ -192,47 +193,45 @@ export const postTemplateImage = async (req, requestData) => {
 
 export const getTemplate = async (req, res) => {
   try {
-    const appname = "RayoColMexApp"; // Hardcoded appname as per your request
-    const apikey = "bbcms7lbqmxe70qy89kj1jxcfmnjfaze"; // Hardcoded apikey as per your request
+    const appname = "RayoColMexApp";
+    const apikey = "bbcms7lbqmxe70qy89kj1jxcfmnjfaze";
 
     const headers = {
       apikey: apikey,
     };
 
-    const data = await axios.get(
+    // Primera petición a la API externa
+    const externalApiResponse = await axios.get(
       `https://api.gupshup.io/sm/api/v1/template/list/${appname}`,
       { headers }
     );
 
-    console.log(data.data);
+    console.log(externalApiResponse.data);
 
-    if (data.data.status === "success") {
-      const jsonData = data.data;
+    if (externalApiResponse.data.status === "success") {
+      const jsonData = externalApiResponse.data;
 
       if (jsonData.status === "success") {
-        const listTemplates = await axios.post(
-          "https://agentechatdevmgt.smartsoft.com.co:3000/campaign-templates", 
-          [],
-          {
-            headers: {
-       
-              "Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJfaWQiOiI2NTI0NjZiNzkzOGEyZDAwMTM4NjQzM2EiLCJuYW1lIjp7ImZpcnN0TmFtZSI6ImFkbWluIiwibGFzdE5hbWUiOiIyIn0sInJvbGUiOiJBRE1JTiIsImNvbXBhbnkiOiI2MGFkNzAxNjU3YjRmZTAwMTNkNGQ2ZTkiLCJsYXN0TG9naW4iOiIyMDIzLTEyLTE4VDIyOjA4OjMxLjU2MloiLCJmaXJzdExvZ2luIjpmYWxzZSwiaWF0IjoxNzAyOTM3MzExLCJleHAiOjE3MDMwMjM3MTF9.6a5ruBldDYUfHOf21d9y-Juj9daWie5VsDQyH27wbQc", // Agrega el token si es necesario
-            }
-          }
-        );
-        console.log(listTemplates.data);
+        // Segunda petición a la base de datos local
+        const result = await campaignTemplate.find({
+          project: "60ad701657b4fe0013d4d6ec",
+        });
 
-        const templateIdOK = listTemplates.data.filter((template) => template.id === idGupshupTemplate);
+        // Realiza alguna acción adicional con los resultados, si es necesario
+        // Por ejemplo, hacer una segunda petición a otra API
+        const additionalApiResponse = await axios.get('https://example.com');
 
-        if (templateIdOK.length === 1) {
-          res.json(templateIdOK[0]); // Assuming you want to send the template as a response
-          return;
-        }
+        // Realiza más procesamiento o manipulación de datos según sea necesario
+
+        return res.json(result);
+      } else {
+        throw new Error("El API externo devolvió un estado no exitoso");
       }
+    } else {
+      throw new Error("La solicitud al API externo no fue exitosa");
     }
-    res.json(data.data); // Assuming you want to send the data as a response
   } catch (error) {
-    console.error("Error al realizar la solicitud a la API externa:", error);
-    throw new Error("Error interno del servidor: " + error.message);
+    console.error("Error al realizar la solicitud al API externo:", error);
+    res.status(500).json({ error: "Error interno del servidor" });
   }
 };

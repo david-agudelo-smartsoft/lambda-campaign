@@ -206,30 +206,28 @@ export const getTemplate = async (req, res) => {
       { headers }
     );
 
-    console.log(externalApiResponse.data);
+    // Extraer la información necesaria de la primera plantilla (si hay más, ajusta según tu necesidad)
+    const firstTemplate = externalApiResponse.data.templates[0];
 
-    if (externalApiResponse.data.status === "success") {
-      const jsonData = externalApiResponse.data;
+    // Verificar si hay al menos una plantilla en la respuesta
+    if (firstTemplate) {
+      // Extraer la información necesaria
+      const { category, templateType, data, status } = firstTemplate;
 
-      if (jsonData.status === "success") {
-        // Segunda petición a la base de datos local
-        const result = await campaignTemplate.find({
-          project: "60ad701657b4fe0013d4d6ec",
-        });
+      // Hacer algo con la información extraída, por ejemplo, imprimir en la consola
+      console.log("Category:", category);
+      console.log("Template Type:", templateType);
+      console.log("Data:", data);
+      console.log("Status:", status);
 
-        // Realiza alguna acción adicional con los resultados, si es necesario
-        // Por ejemplo, hacer una segunda petición a otra API
-        const additionalApiResponse = await axios.get('https://example.com');
-
-        // Realiza más procesamiento o manipulación de datos según sea necesario
-
-        return res.json(result);
-      } else {
-        throw new Error("El API externo devolvió un estado no exitoso");
-      }
+      // Puedes enviar la información en la respuesta si es necesario
+      res.status(200).json({ category, templateType, data, status });
     } else {
-      throw new Error("La solicitud al API externo no fue exitosa");
+      // Manejar el caso en que no haya plantillas en la respuesta
+      console.error("No se encontraron plantillas en la respuesta de la API");
+      res.status(404).json({ error: "No se encontraron plantillas" });
     }
+   
   } catch (error) {
     console.error("Error al realizar la solicitud al API externo:", error);
     res.status(500).json({ error: "Error interno del servidor" });

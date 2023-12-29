@@ -11,7 +11,7 @@ export const Detailsmessage = async (req, res) => {
         $match: {
           $and: [
               { "campaignTemplate": new ObjectId(campaignTemplateId) },
-              { "project": new ObjectId(projectId), },
+              { "project": new ObjectId(projectId)},
               { "updatedAt": { $gte: new Date(initDate) } },
               { "updatedAt": { $lte: new Date(finalDate) } }
           ],
@@ -178,7 +178,7 @@ console.log(req.body)
         $match: {
           $and: [
             { "campaignTemplate": new ObjectId(campaignTemplateId) },
-            { "project": new ObjectId(projectId), },
+            { "project": new ObjectId(projectId)},
             { "updatedAt": { $gte: new Date(initDate) } },
             { "updatedAt": { $lte: new Date(finalDate) } }
         ],
@@ -353,7 +353,7 @@ export const DashboardTemplate = async (req, res) => {
       {
         $match: {
           $and: [
-            { "project": new ObjectId(projectId) },
+            { "project": new ObjectId(projectId)},
             { createdAt: { $gte: new Date(initDate) } },
             { createdAt: { $lte: new Date(finalDate) } },
           ],

@@ -6,8 +6,6 @@ export const Detailsmessage = async (req, res) => {
   try {
     const { initDate, finalDate ,projectId,campaignTemplateId } = req.body;
 
-  console.log(req.body)
-
     const result = await OutboundCampaign.aggregate([
       {
         $match: {
@@ -355,7 +353,7 @@ export const DashboardTemplate = async (req, res) => {
       {
         $match: {
           $and: [
-            // { "project": new ObjectId(projectId), },
+            { "project": new ObjectId(projectId) },
             { createdAt: { $gte: new Date(initDate) } },
             { createdAt: { $lte: new Date(finalDate) } },
           ],

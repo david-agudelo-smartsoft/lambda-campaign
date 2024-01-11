@@ -1,5 +1,6 @@
 import OutboundCampaign from "../models/campaign.model.js";
 import { ObjectId } from 'mongodb';
+import moment from 'moment-timezone';
 
 
 export const Detailsmessage = async (req, res) => {
@@ -349,16 +350,27 @@ export const DashboardTemplate = async (req, res) => {
   try {
     const { initDate, finalDate,projectId } = req.body;
 
-    const result = await OutboundCampaign.aggregate([
-      {
-        $match: {
-          $and: [
-            { "project": new ObjectId(projectId)},
-            { createdAt: { $gte: new Date(initDate) } },
-            { createdAt: { $lte: new Date(finalDate) } },
-          ],
-        },
-      },
+       // Ajustar la fecha de inicio para comenzar desde las 00:00:00 GMT-5
+       const adjustedInitDate = moment(initDate).tz('America/Bogota').startOf('day');
+       console.log(adjustedInitDate);
+
+       // Ajustar la fecha final para terminar a las 23:59:59 GMT-5
+       const adjustedFinalDate = moment(finalDate).tz('America/Bogota').endOf('day');
+       console.log(adjustedFinalDate);
+
+       console.log(req.body);
+   
+   
+       const result = await OutboundCampaign.aggregate([
+         {
+           $match: {
+             $and: [
+               { "project": new ObjectId(projectId) },
+               { createdAt: { $gte: adjustedInitDate.toDate() } },
+               { createdAt: { $lte: adjustedFinalDate.toDate() } },
+             ],
+           },
+         },
       {
         $lookup: {
           from: 'campaign.templates',

@@ -1,7 +1,9 @@
 import axios from "axios";
 import qs from "querystring";
 import fs from "fs";
-import campaignTemplate from "../models/campaign.model.js";
+import CampaignTemplate from "../models/template.model.js";
+import Channel from "../models/channel.model.js";
+import e from "express";
 
 export const postTemplateText = async (req) => {
   try {
@@ -193,43 +195,205 @@ export const postTemplateImage = async (req, requestData) => {
 
 export const getTemplate = async (req, res) => {
   try {
-    const appname = "RayoColMexApp";
-    const apikey = "bbcms7lbqmxe70qy89kj1jxcfmnjfaze";
+    const { page, pageSize, idGupshup } = req.body.campaignTemplate;
+    const { project } = req.body.campaignTemplate.project;
+    // Obtener el canal correspondiente al proyecto
+    const channel = await Channel.find({
+      project: `${project}`,
+      type: "GUPSHUP",
+    });
 
-    const headers = {
-      apikey: apikey,
-    };
+    // Verificar si se encontró el canal
+    if (channel && channel.length > 0) {
+      const appname = channel[0].appname;
+      const apikey = "bbcms7lbqmxe70qy89kj1jxcfmnjfaze";
+      const headers = {
+        apikey: apikey,
+      };
 
-    // Primera petición a la API externa
-    const externalApiResponse = await axios.get(
-      `https://api.gupshup.io/sm/api/v1/template/list/${appname}`,
-      { headers }
-    );
+      // Obtener plantillas externas
+      const externalApiResponse = await axios.get(
+        `https://api.gupshup.io/sm/api/v1/template/list/${appname}`,
+        { headers }
+      );
 
-    // Extraer la información necesaria de la primera plantilla (si hay más, ajusta según tu necesidad)
-    const firstTemplate = externalApiResponse.data.templates[0];
+      // Verificar si hay al menos una plantilla en la respuesta
+      if (externalApiResponse.data.templates.length > 0) {
+        // Obtener resultados de la base de datos con filtro por título
+        let dbResults;
+        if (idGupshup) {
+          dbResults = await CampaignTemplate.find({
+            project: `${project}`,
+            idGupshup: { $regex: new RegExp(idGupshup, "i") },
+          }).sort({createdAt: -1});
 
-    // Verificar si hay al menos una plantilla en la respuesta
-    if (firstTemplate) {
-      // Extraer la información necesaria
-      const { category, templateType, data, status } = firstTemplate;
+          // Paginación: Obtén parámetros de la solicitud
+          const startIndex = (page - 1) * pageSize;
+          const endIndex = page * pageSize;
+          
+          // Verificar límites de los índices
+          const validStartIndex = Math.max(0, Math.min(startIndex, dbResults.length - 1));
+          const validEndIndex = Math.max(0, Math.min(endIndex, dbResults.length));
 
-      // Hacer algo con la información extraída, por ejemplo, imprimir en la consola
-      console.log("Category:", category);
-      console.log("Template Type:", templateType);
-      console.log("Data:", data);
-      console.log("Status:", status);
+          // Extraer la información necesaria de la segunda plantilla (base de datos)
+          const extractedData = dbResults
+            .slice(validStartIndex, validEndIndex)
+            .map(({ message, type, idGupshup, publicUrl, createdAt }) => ({
+              message,
+              type,
+              idGupshup,
+              publicUrl,
+              createdAt,
+            }))
+          
+          // Obtener todos los valores de 'status' y 'category' de la API externa
+          const allStatusValues = externalApiResponse.data.templates.map(
+            (template) => template.status
+          );
+          const allCategories = externalApiResponse.data.templates.map(
+            (template) => template.category
+          );
 
-      // Puedes enviar la información en la respuesta si es necesario
-      res.status(200).json({ category, templateType, data, status });
+          const allAppId = externalApiResponse.data.templates.map(
+            (template) => template.appId
+          );
+          
+
+          // Validación: si el tipo es IMAGE, realizar operación específica
+          const imageTemplates = extractedData.filter(
+            (template) => template.type === "IMAGE"
+          );
+
+          if (imageTemplates.length > 0) {
+            // Realizar operación específica si hay plantillas de tipo IMAGE
+            imageTemplates.forEach((imageTemplate) => {
+              // Lógica específica para plantillas de tipo IMAGE
+            });
+          }
+
+          // Unificar la información de la API externa y la base de datos
+          const unifiedData = externalApiResponse.data.templates.map(
+            (template, index) => ({
+              appId: allAppId[index],
+              status: allStatusValues[index],
+              category: allCategories[index],
+              ...extractedData[index],
+            })
+          );
+
+          // Filtrar objetos sin la propiedad 'message'
+          const filteredData = unifiedData.filter(
+            (template) => template.message !== undefined
+          );
+
+          console.log("filteredData", filteredData);
+          // Puedes enviar la información filtrada y paginada en la respuesta si es necesario
+          res.json({
+            data: filteredData,
+            pagination: {
+              page,
+              pageSize,
+              totalPages: Math.ceil(dbResults.length / pageSize),
+            },
+          });
+        } else {
+          dbResults = await CampaignTemplate.find({
+            project: `${project}`,
+          }).sort({createdAt: -1});
+
+          // Paginación: Obtén parámetros de la solicitud
+          const startIndex = (page - 1) * pageSize;
+          const endIndex = page * pageSize;
+          
+          // Verificar límites de los índices
+          const validStartIndex = Math.max(0, Math.min(startIndex, dbResults.length - 1));
+          const validEndIndex = Math.max(0, Math.min(endIndex, dbResults.length));
+
+          // Extraer la información necesaria de la segunda plantilla (base de datos)
+          const extractedData = dbResults
+            .slice(validStartIndex, validEndIndex)
+            .map(({ message, type, idGupshup, publicUrl, createdAt }) => ({
+              message,
+              type,
+              idGupshup,
+              publicUrl,
+              createdAt,
+            }))
+           
+            const allAppId = externalApiResponse.data.templates.map(
+              (template) => template.appId
+            );
+         
+          // Obtener todos los valores de 'status' y 'category' de la API externa
+          const allStatusValues = externalApiResponse.data.templates.map(
+            (template) => template.status
+          );
+          const allCategories = externalApiResponse.data.templates.map(
+            (template) => template.category
+          );
+
+          // Validación: si el tipo es IMAGE, realizar operación específica
+          const imageTemplates = extractedData.filter(
+            (template) => template.type === "IMAGE"
+          );
+
+          if (imageTemplates.length > 0) {
+            // Realizar operación específica si hay plantillas de tipo IMAGE
+            imageTemplates.forEach((imageTemplate) => {
+              // Lógica específica para plantillas de tipo IMAGE
+            });
+          }
+
+          // Unificar la información de la API externa y la base de datos
+          const unifiedData = externalApiResponse.data.templates.map(
+            (template, index) => ({
+              appId: allAppId[index],
+              status: allStatusValues[index],
+              category: allCategories[index],
+              ...extractedData[index],
+            })
+          );
+
+          // Filtrar objetos sin la propiedad 'message'
+          const filteredData = unifiedData.filter(
+            (template) => template.message !== undefined
+          );
+
+          console.log("filteredData", filteredData);
+          // Puedes enviar la información filtrada y paginada en la respuesta si es necesario
+          res.json({
+            data: filteredData,
+            pagination: {
+              page,
+              pageSize,
+              totalPages: Math.ceil(dbResults.length / pageSize),
+            },
+          });
+        }
+      } else {
+        console.error("No se encontraron plantillas en la respuesta de la API");
+        res.status(404).json({ error: "No se encontraron plantillas" });
+      }
     } else {
-      // Manejar el caso en que no haya plantillas en la respuesta
-      console.error("No se encontraron plantillas en la respuesta de la API");
-      res.status(404).json({ error: "No se encontraron plantillas" });
+      console.error("No se encontró el canal para el proyecto especificado");
+      res.status(404).json({
+        error: "No se encontró el canal para el proyecto especificado",
+      });
     }
-   
   } catch (error) {
-    console.error("Error al realizar la solicitud al API externo:", error);
+    console.error(
+      "Error al realizar la solicitud al API externo o la base de datos:",
+      error
+    );
     res.status(500).json({ error: "Error interno del servidor" });
   }
 };
+
+
+export const updateTemplate = async (req, res) => {
+  try {
+    
+  } catch (error) {
+    
+  }
+}

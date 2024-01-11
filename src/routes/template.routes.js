@@ -21,6 +21,6 @@ const storage = multer.diskStorage({
 router.post('/template-image', postTemplateImage);
 router.post('/template', postTemplateText);
 router.post('/image',upload.single('image'),image)
-router.get('/templates', getTemplate);
+router.post('/templates', getTemplate);
 
 export default router;

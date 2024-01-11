@@ -9,7 +9,7 @@ const outboundCampaignSchema = new mongoose.Schema({
         type: Date,
         required: true,
     },
-    campaignTemplate: {
+    CampaignTemplate: {
         type: mongoose.Schema.Types.ObjectId,
         required: true,
     },

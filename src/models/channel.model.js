@@ -41,7 +41,11 @@ const channelSchema = new Schema(
         subtype:{
             type: String,
             required: false
-        }
+        },
+        appIdGushup:{
+            type: String,
+            required: false
+        },
     },
     {
         timestamps: true,

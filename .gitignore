@@ -105,3 +105,4 @@ dist
 # Package-lock
 package-lock.json
 rpa_back_end.zip
+.vscode/settings.json

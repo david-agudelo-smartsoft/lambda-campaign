@@ -11,7 +11,6 @@ export const postTemplateText = async (req) => {
     const { project } = req.body.campaignTemplate.project;
     const db = await Channel.find({ project: `${project}`, type: "GUPSHUP" });
     const id = db[0].appIdGushup;
-    console.log(id);
     const {
       languageCode,
       content,
@@ -26,7 +25,7 @@ export const postTemplateText = async (req) => {
     console.log(req.body.campaignTemplate.variables);
 
     const apiResponse = await axios.post(
-      `https://api.gupshup.io/wa/app/${id}/template`,
+      "https://api.gupshup.io/wa/app/e16ef554-0930-4b6e-88bd-6e948ce5f78a/template",
       {
         languageCode,
         content,
@@ -95,10 +94,15 @@ export const postTemplateText = async (req) => {
 
 export const image = async (req, res) => {
   try {
-    
+    const project = req.body;
+    const body = project.jsonBody;
+    const db = await Channel.find({ project: `${body}`, type: "GUPSHUP" });
+    const id = db[0].appIdGushup.toString(); // Conviértelo a cadena si aún no lo es
+
+
     const file = req.file;
 
-    console.log("Contenido del archivo:", file);
+
 
     const formData = new FormData();
     formData.append("file_length", file.size);
@@ -108,8 +112,7 @@ export const image = async (req, res) => {
     formData.append("file", blob, { filename: file.originalname });
 
     // Cambia la URL de la segunda API según tu configuración
-    const secondApiUrl =
-      "https://api.gupshup.io/wa/e16ef554-0930-4b6e-88bd-6e948ce5f78a/wa/media/"; // Reemplaza con la URL de la segunda API
+    const secondApiUrl = `https://api.gupshup.io/wa/${id}/wa/media/`; // Reemplaza con la URL de la segunda API
 
     // Enviar la solicitud a la segunda API
     const response = await axios.post(secondApiUrl, formData, {
@@ -120,92 +123,123 @@ export const image = async (req, res) => {
       },
     });
 
-    console.log("La segunda API respondió:", response.data.mediaId);
-
-    // Puedes enviar una respuesta al frontend si es necesario
+   // Puedes enviar una respuesta al frontend si es necesario
     res.json({ mediaId: response.data.mediaId });
-    
   } catch (error) {
     console.error("Error al subir la imagen al backend:", error);
     res.status(500).send("Hubo un error al subir la imagen al backend.");
   }
-}
+};
 
-export const postTemplateImage = async (req, requestData) => {
+export const postTemplateImage = async (req) => {
   try {
-    const {
-      languageCode,
-      content,
-      category,
-      templateType,
-      elementName,
-      example,
-      vertical,
-      allowTemplateCategoryChange,
-      exampleMedia,
-      mediaId,
-    } = req.body;
-    console.log(req.body);
 
-    const apiResponse = await axios.post(
-      "https://api.gupshup.io/wa/app/e16ef554-0930-4b6e-88bd-6e948ce5f78a/template",
-      {
+    const { project } = req.body.campaignTemplate.project;
+
+    const db = await Channel.find({ project: `${project}`, type: "GUPSHUP" });
+    const id = db[0].appIdGushup;
+    console.log(id);
+
+    const idImage = req.body.campaignTemplate.variables.mediaId;
+
+    const apiImage = await axios.get(
+      `https://api.gupshup.io/wa/${id}/wa/media/${idImage}?download=false`
+    )
+
+    if(apiImage.status === 200){
+     
+      const {
         languageCode,
         content,
         category,
         templateType,
         elementName,
-        exampleHeader,
         example,
         vertical,
         allowTemplateCategoryChange,
         exampleMedia,
         mediaId,
-      },
-
-      {
-        headers: {
-          "Content-Type": "application/x-www-form-urlencoded",
-          apikey: "bbcms7lbqmxe70qy89kj1jxcfmnjfaze",
-        },
-      }
-    );
-
-    console.log(apiResponse.data);
-
-    if (apiResponse.data.status === "success") {
-      const firstApiTemplateId = apiResponse.data.template.id;
-      const contentFromReqBody = apiResponse.data.template.data;
-      const token = req.body.campaignTemplate.token;
-      const { project } = req.body.campaignTemplate.project;
-
-      // Puedes enviar la respuesta a otra API aquí
-      const secondApiResponse = await axios.post(
-        `${process.env.AGENTE_CHAT}`,
+        exampleHeader,
+      } = req.body.campaignTemplate.variables;
+  
+      console.log(req.body.campaignTemplate.variables);
+  
+      const apiResponse = await axios.post(
+        `https://api.gupshup.io/wa/app/${id}/template`,
         {
-          campaignTemplate: {
-            channel: "GUPSHUP",
-            type: "TEXT",
-            message: ` ${contentFromReqBody}`,
-            project: `${project}`, // Usa el id del primer API response como project
-            externalIntegrationInfo: {
-              id: firstApiTemplateId,
-              params: ["Pruebas", "pruebas@correo.com"],
-            },
-          },
+          languageCode,
+          content,
+          category,
+          templateType,
+          elementName,
+          exampleHeader,
+          example,
+          vertical,
+          allowTemplateCategoryChange,
+          exampleMedia,
+          mediaId,
         },
+  
         {
           headers: {
-            "Content-Type": "application/json",
-            Authorization: `${token}`,
-            // Otras cabeceras necesarias para la segunda API
+            "Content-Type": "application/x-www-form-urlencoded",
+            apikey: `${process.env.API_KEY_GUPSHUP}`,
           },
         }
       );
-    } else {
+  
+      console.log(apiResponse.data);
+  
+      if (apiResponse.data.status === "success") {
+        const firstApiTemplateId = apiResponse.data.template.id;
+        const contentFromReqBody = apiResponse.data.template.data;
+        const token = req.body.campaignTemplate.token;
+        const { project } = req.body.campaignTemplate.project;
+        const { title } = req.body.campaignTemplate.variables;
+        const { idGupshup } = req.body.campaignTemplate.variables;
+  
+        // Puedes enviar la respuesta a otra API aquí
+        const secondApiResponse = await axios.post(
+          `${process.env.AGENTE_CHAT}`,
+          {
+            campaignTemplate: {
+              channel: "GUPSHUP",
+              type: "IMAGE",
+              message: ` ${contentFromReqBody}`,
+              project: `${project}`, // Usa el id del primer API response como project
+              url: "https://chatbot-wizard-public.s3.amazonaws.com/templates-image/RayoColApp/renovaciones_4_col.jpg",
+              externalIntegrationInfo: {
+                id: firstApiTemplateId,
+                params: ["Pruebas", "pruebas@correo.com"],
+              },
+              title: `${title}`,
+              idGupshup: `${idGupshup}`,
+              publicUrl:
+                "https://chatbot-wizard-public.s3.amazonaws.com/templates-image/RayoColApp/renovaciones_4_col.jpg",
+            },
+          },
+          {
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `${token}`,
+              // Otras cabeceras necesarias para la segunda API
+            },
+          }
+        );
+  
+        console.log("La segunda API respondió:", secondApiResponse.data);
+      } else {
+        console.error(
+          "La primera API respondió con un error:",
+          apiResponse.data.error
+        );
+      }
+    }
+
+    else{
       console.error(
         "La primera API respondió con un error:",
-        apiResponse.data.error
+        apiImage.data.error
       );
     }
   } catch (error) {
@@ -216,15 +250,13 @@ export const postTemplateImage = async (req, requestData) => {
 
 export const getTemplate = async (req, res) => {
   try {
-    const { page, pageSize, idGupshup } = req.body.campaignTemplate;
+    const { idGupshup } = req.body.campaignTemplate;
     const { project } = req.body.campaignTemplate.project;
-    // Obtener el canal correspondiente al proyecto
     const channel = await Channel.find({
       project: `${project}`,
       type: "GUPSHUP",
     });
 
-    // Verificar si se encontró el canal
     if (channel && channel.length > 0) {
       const appname = channel[0].appname;
       console.log(appname);
@@ -232,174 +264,96 @@ export const getTemplate = async (req, res) => {
         apikey: `${process.env.API_KEY_GUPSHUP}`,
       };
 
-      // Obtener plantillas externas
       const externalApiResponse = await axios.get(
         `${process.env.GET_TEMPLATE}${appname}`,
         { headers }
       );
 
-      // Verificar si hay al menos una plantilla en la respuesta
+      console.log(externalApiResponse.data.templates.length);
+
       if (externalApiResponse.data.templates.length > 0) {
-        // Obtener resultados de la base de datos con filtro por título
         let dbResults;
+
         if (idGupshup) {
           dbResults = await CampaignTemplate.find({
             project: `${project}`,
-            idGupshup: { $regex: new RegExp(idGupshup, "i") },
-          }).sort({ createdAt: -1 });
+            title: { $regex: new RegExp(idGupshup, "i") },
+          });
 
-          // Paginación: Obtén parámetros de la solicitud
-          const startIndex = (page - 1) * pageSize;
-          const endIndex = page * pageSize;
-
-          // Verificar límites de los índices
-          const validStartIndex = Math.max(
-            0,
-            Math.min(startIndex, dbResults.length - 1)
-          );
-          const validEndIndex = Math.max(
-            0,
-            Math.min(endIndex, dbResults.length)
-          );
-
-          // Extraer la información necesaria de la segunda plantilla (base de datos)
-          const extractedData = dbResults
-            .slice(validStartIndex, validEndIndex)
-            .map(({ message, type, idGupshup, publicUrl, createdAt }) => ({
+          // Extraer la información necesaria de la segunda plantilla (base de datos)
+          const extractedData = dbResults.map(
+            ({ message, type, idGupshup, publicUrl, createdAt, title }) => ({
               message,
               type,
               idGupshup,
               publicUrl,
               createdAt,
-            }));
-
-          // Obtener todos los valores de 'status' y 'category' de la API externa
-          const allStatusValues = externalApiResponse.data.templates.map(
-            (template) => template.status
-          );
-          const allCategories = externalApiResponse.data.templates.map(
-            (template) => template.category
-          );
-
-          const allAppId = externalApiResponse.data.templates.map(
-            (template) => template.appId
-          );
-
-          // Validación: si el tipo es IMAGE, realizar operación específica
-          const imageTemplates = extractedData.filter(
-            (template) => template.type === "IMAGE"
-          );
-
-          if (imageTemplates.length > 0) {
-            // Realizar operación específica si hay plantillas de tipo IMAGE
-            imageTemplates.forEach((imageTemplate) => {
-              // Lógica específica para plantillas de tipo IMAGE
-            });
-          }
-
-          // Unificar la información de la API externa y la base de datos
-          const unifiedData = externalApiResponse.data.templates.map(
-            (template, index) => ({
-              appId: allAppId[index],
-              status: allStatusValues[index],
-              category: allCategories[index],
-              ...extractedData[index],
+              title,
             })
           );
 
-          // Filtrar objetos sin la propiedad 'message'
-          const filteredData = unifiedData.filter(
-            (template) => template.message !== undefined
+          const unifiedData = externalApiResponse.data.templates.map(
+            (template, index) => {
+              const dbTemplate = extractedData.find(
+                (item) => item.idGupshup === template.elementName
+              );
+
+              return {
+                status: template.status,
+                category: template.category,
+                ...dbTemplate,
+              };
+            }
           );
 
-          console.log("filteredData", filteredData);
-          // Puedes enviar la información filtrada y paginada en la respuesta si es necesario
+          const filteredData = unifiedData.filter(
+            (template) => template.idGupshup
+          );
+
+          console.log(filteredData);
+
           res.json({
             data: filteredData,
-            pagination: {
-              page,
-              pageSize,
-              totalPages: Math.ceil(dbResults.length / pageSize),
-            },
           });
         } else {
           dbResults = await CampaignTemplate.find({
             project: `${project}`,
-          }).sort({ createdAt: -1 });
+          });
 
-          // Paginación: Obtén parámetros de la solicitud
-          const startIndex = (page - 1) * pageSize;
-          const endIndex = page * pageSize;
-
-          // Verificar límites de los índices
-          const validStartIndex = Math.max(
-            0,
-            Math.min(startIndex, dbResults.length - 1)
-          );
-          const validEndIndex = Math.max(
-            0,
-            Math.min(endIndex, dbResults.length)
-          );
-
-          // Extraer la información necesaria de la segunda plantilla (base de datos)
-          const extractedData = dbResults
-            .slice(validStartIndex, validEndIndex)
-            .map(({ message, type, idGupshup, publicUrl, createdAt }) => ({
+          // Extraer la información necesaria de la segunda plantilla (base de datos)
+          const extractedData = dbResults.map(
+            ({ message, type, idGupshup, publicUrl, createdAt, title }) => ({
               message,
               type,
               idGupshup,
               publicUrl,
               createdAt,
-            }));
-
-          const allAppId = externalApiResponse.data.templates.map(
-            (template) => template.appId
-          );
-
-          // Obtener todos los valores de 'status' y 'category' de la API externa
-          const allStatusValues = externalApiResponse.data.templates.map(
-            (template) => template.status
-          );
-          const allCategories = externalApiResponse.data.templates.map(
-            (template) => template.category
-          );
-
-          // Validación: si el tipo es IMAGE, realizar operación específica
-          const imageTemplates = extractedData.filter(
-            (template) => template.type === "IMAGE"
-          );
-
-          if (imageTemplates.length > 0) {
-            // Realizar operación específica si hay plantillas de tipo IMAGE
-            imageTemplates.forEach((imageTemplate) => {
-              // Lógica específica para plantillas de tipo IMAGE
-            });
-          }
-
-          // Unificar la información de la API externa y la base de datos
-          const unifiedData = externalApiResponse.data.templates.map(
-            (template, index) => ({
-              appId: allAppId[index],
-              status: allStatusValues[index],
-              category: allCategories[index],
-              ...extractedData[index],
+              title,
             })
           );
 
-          // Filtrar objetos sin la propiedad 'message'
-          const filteredData = unifiedData.filter(
-            (template) => template.message !== undefined
+          const unifiedData = externalApiResponse.data.templates.map(
+            (template, index) => {
+              const dbTemplate = extractedData.find(
+                (item) => item.idGupshup === template.elementName
+              );
+
+              return {
+                status: template.status,
+                category: template.category,
+                ...dbTemplate,
+              };
+            }
           );
 
-          console.log("filteredData", filteredData);
-          // Puedes enviar la información filtrada y paginada en la respuesta si es necesario
+          const filteredData = unifiedData.filter(
+            (template) => template.idGupshup
+          );
+
+          console.log(filteredData);
+
           res.json({
             data: filteredData,
-            pagination: {
-              page,
-              pageSize,
-              totalPages: Math.ceil(dbResults.length / pageSize),
-            },
           });
         }
       } else {
@@ -419,9 +373,4 @@ export const getTemplate = async (req, res) => {
     );
     res.status(500).json({ error: "Error interno del servidor" });
   }
-};
-
-export const updateTemplate = async (req, res) => {
-  try {
-  } catch (error) {}
 };

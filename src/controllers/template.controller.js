@@ -5,6 +5,7 @@ import CampaignTemplate from "../models/template.model.js";
 import Channel from "../models/channel.model.js";
 import e from "express";
 import { Blob } from "buffer";
+import { S3Uploader } from "../services/s3.service.js";
 
 export const postTemplateText = async (req) => {
   try {
@@ -124,16 +125,19 @@ export const image = async (req, res) => {
     });
 
    // Puedes enviar una respuesta al frontend si es necesario
-    res.json({ mediaId: response.data.mediaId });
+    const s3Uploader = new S3Uploader();
+     const s3Response = await s3Uploader.uploadFile(file)
+    res.json({ mediaId: response.data.mediaId, urlAWS: s3Response.Location });
+
   } catch (error) {
     console.error("Error al subir la imagen al backend:", error);
     res.status(500).send("Hubo un error al subir la imagen al backend.");
   }
 };
 
+
 export const postTemplateImage = async (req) => {
   try {
-
     const { project } = req.body.campaignTemplate.project;
 
     const db = await Channel.find({ project: `${project}`, type: "GUPSHUP" });
@@ -147,7 +151,6 @@ export const postTemplateImage = async (req) => {
     )
 
     if(apiImage.status === 200){
-     
       const {
         languageCode,
         content,
@@ -160,10 +163,11 @@ export const postTemplateImage = async (req) => {
         exampleMedia,
         mediaId,
         exampleHeader,
+        
       } = req.body.campaignTemplate.variables;
-  
+
       console.log(req.body.campaignTemplate.variables);
-  
+
       const apiResponse = await axios.post(
         `https://api.gupshup.io/wa/app/${id}/template`,
         {
@@ -179,7 +183,6 @@ export const postTemplateImage = async (req) => {
           exampleMedia,
           mediaId,
         },
-  
         {
           headers: {
             "Content-Type": "application/x-www-form-urlencoded",
@@ -187,9 +190,9 @@ export const postTemplateImage = async (req) => {
           },
         }
       );
-  
+
       console.log(apiResponse.data);
-  
+
       if (apiResponse.data.status === "success") {
         const firstApiTemplateId = apiResponse.data.template.id;
         const contentFromReqBody = apiResponse.data.template.data;
@@ -197,8 +200,9 @@ export const postTemplateImage = async (req) => {
         const { project } = req.body.campaignTemplate.project;
         const { title } = req.body.campaignTemplate.variables;
         const { idGupshup } = req.body.campaignTemplate.variables;
-  
-        // Puedes enviar la respuesta a otra API aquí
+        const url = req.body.campaignTemplate.url;
+
+
         const secondApiResponse = await axios.post(
           `${process.env.AGENTE_CHAT}`,
           {
@@ -206,8 +210,8 @@ export const postTemplateImage = async (req) => {
               channel: "GUPSHUP",
               type: "IMAGE",
               message: ` ${contentFromReqBody}`,
-              project: `${project}`, // Usa el id del primer API response como project
-              url: "https://chatbot-wizard-public.s3.amazonaws.com/templates-image/RayoColApp/renovaciones_4_col.jpg",
+              project: `${project}`,
+              url: `${url}`,
               externalIntegrationInfo: {
                 id: firstApiTemplateId,
                 params: ["Pruebas", "pruebas@correo.com"],
@@ -215,38 +219,52 @@ export const postTemplateImage = async (req) => {
               title: `${title}`,
               idGupshup: `${idGupshup}`,
               publicUrl:
-                "https://chatbot-wizard-public.s3.amazonaws.com/templates-image/RayoColApp/renovaciones_4_col.jpg",
+                `${url}`,
             },
           },
           {
             headers: {
               "Content-Type": "application/json",
               Authorization: `${token}`,
-              // Otras cabeceras necesarias para la segunda API
             },
           }
         );
-  
+
         console.log("La segunda API respondió:", secondApiResponse.data);
+
+        return {
+          success: true,
+          message: "Template image posted successfully",
+        };
+
       } else {
         console.error(
           "La primera API respondió con un error:",
           apiResponse.data.error
         );
+        return {
+          success: false,
+          message: "Failed to post template image",
+          error: apiResponse.data.error,
+        };
       }
-    }
-
-    else{
+    } else {
       console.error(
         "La primera API respondió con un error:",
         apiImage.data.error
       );
+      return {
+        success: false,
+        message: "Failed to retrieve image from GUPSHUP API",
+        error: apiImage.data.error,
+      };
     }
   } catch (error) {
     console.error("Error al realizar la solicitud a la API externa:", error);
     throw new Error("Error interno del servidor: " + error.message);
   }
 };
+
 
 export const getTemplate = async (req, res) => {
   try {

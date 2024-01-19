@@ -1,9 +1,6 @@
 import axios from "axios";
-import qs from "querystring";
-import fs from "fs";
 import CampaignTemplate from "../models/template.model.js";
 import Channel from "../models/channel.model.js";
-import e from "express";
 import { Blob } from "buffer";
 import { S3Uploader } from "../services/s3.service.js";
 
@@ -26,7 +23,7 @@ export const postTemplateText = async (req) => {
     console.log(req.body.campaignTemplate.variables);
 
     const apiResponse = await axios.post(
-      "https://api.gupshup.io/wa/app/e16ef554-0930-4b6e-88bd-6e948ce5f78a/template",
+      `https://api.gupshup.io/wa/app/${id}/template`,
       {
         languageCode,
         content,
@@ -47,7 +44,9 @@ export const postTemplateText = async (req) => {
       }
     );
 
-    console.log(apiResponse.data);
+    if (apiResponse.data.status !== "success") {
+    throw new Error("Error al realizar la solicitud a la API externa: " + apiResponse.data.message);
+    }
 
     if (apiResponse.data.status === "success") {
       const firstApiTemplateId = apiResponse.data.template.id;
@@ -99,12 +98,7 @@ export const image = async (req, res) => {
     const body = project.jsonBody;
     const db = await Channel.find({ project: `${body}`, type: "GUPSHUP" });
     const id = db[0].appIdGushup.toString(); // Conviértelo a cadena si aún no lo es
-
-
     const file = req.file;
-
-
-
     const formData = new FormData();
     formData.append("file_length", file.size);
     formData.append("file_type", file.mimetype);
@@ -135,17 +129,13 @@ export const image = async (req, res) => {
   }
 };
 
-
 export const postTemplateImage = async (req) => {
   try {
     const { project } = req.body.campaignTemplate.project;
-
     const db = await Channel.find({ project: `${project}`, type: "GUPSHUP" });
     const id = db[0].appIdGushup;
     console.log(id);
-
     const idImage = req.body.campaignTemplate.variables.mediaId;
-
     const apiImage = await axios.get(
       `https://api.gupshup.io/wa/${id}/wa/media/${idImage}?download=false`
     )
@@ -287,8 +277,6 @@ export const getTemplate = async (req, res) => {
         { headers }
       );
 
-      console.log(externalApiResponse.data.templates.length);
-
       if (externalApiResponse.data.templates.length > 0) {
         let dbResults;
 
@@ -367,8 +355,6 @@ export const getTemplate = async (req, res) => {
           const filteredData = unifiedData.filter(
             (template) => template.idGupshup
           );
-
-          console.log(filteredData);
 
           res.json({
             data: filteredData,

@@ -13,13 +13,12 @@ export class S3Uploader {
     this.s3 = new AWS.S3();
   }
 
-  async uploadFile(file) {
+  async uploadFile(file,appname) {
     try {
         const s3Response = await this.s3
         .upload({
           Bucket: process.env.AWS_BUCKET_NAME,
-          
-          Key: `/test/${file.originalname}`,
+          Key: `templates-image/${appname}/${file.originalname}`,
           Body: file.buffer,
           ContentType: file.mimetype
         })

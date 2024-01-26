@@ -3,12 +3,38 @@ import CampaignTemplate from "../models/template.model.js";
 import Channel from "../models/channel.model.js";
 import { Blob } from "buffer";
 import { S3Uploader } from "../services/s3.service.js";
+import Template from "../models/template.model.js";
+import e from "express";
 
-export const postTemplateText = async (req,res) => {
+export const postTemplateText = async (req, res) => {
   try {
     const { project } = req.body.campaignTemplate.project;
     const db = await Channel.find({ project: `${project}`, type: "GUPSHUP" });
     const id = db[0].appIdGushup;
+    const { idGupshup, title } = req.body.campaignTemplate.variables;
+
+    // Verificar si el idGupshup ya existe en la base de datos
+    const existingIdGupshup = await Template.findOne({ idGupshup });
+
+    if (existingIdGupshup) {
+      return {
+        success: false,
+        message:
+          "El idGupshup ya existe en la base de datos. No se puede enviar la plantilla a Gupshup.",
+      };
+    }
+
+    // Verificar si el title ya existe en la base de datos
+    const existingTitle = await Template.findOne({ title });
+
+    if (existingTitle) {
+      return {
+        success: false,
+        message:
+          "El title ya existe en la base de datos. No se puede enviar la plantilla a Gupshup.",
+      };
+    }
+
     const {
       languageCode,
       content,
@@ -20,7 +46,6 @@ export const postTemplateText = async (req,res) => {
       vertical,
       allowTemplateCategoryChange,
     } = req.body.campaignTemplate.variables;
-
 
     const apiResponse = await axios.post(
       `https://api.gupshup.io/wa/app/${id}/template`,
@@ -46,15 +71,14 @@ export const postTemplateText = async (req,res) => {
 
     console.log(apiResponse.data);
 
-
     if (apiResponse.data.status !== "success") {
-      return({
+      return {
         success: false,
-        message: apiResponse.data.message
-      });
+        message: apiResponse.data.message,
+      };
     }
 
-    if (apiResponse.data.status ==="success") {
+    if (apiResponse.data.status === "success") {
       const firstApiTemplateId = apiResponse.data.template.id;
       const contentFromReqBody = apiResponse.data.template.data;
 
@@ -78,6 +102,7 @@ export const postTemplateText = async (req,res) => {
             },
             title: `${title}`,
             idGupshup: `${idGupshup}`,
+            status: `PENDING`,
           },
         },
         {
@@ -90,17 +115,16 @@ export const postTemplateText = async (req,res) => {
       );
 
       console.log("La segunda API respondió:", secondApiResponse.data);
-       return ({
+      return {
         success: true,
-        message: "Plantilla creada correctamente"});
-    } 
-
-    else{
-     return ({
-      success: false,
-      message: "Error al crear la plantilla"});
+        message: "Plantilla creada correctamente",
+      };
+    } else {
+      return {
+        success: false,
+        message: "Error al crear la plantilla",
+      };
     }
-
   } catch (error) {
     console.error("Error al realizar la solicitud a la API externa:", error);
   }
@@ -111,6 +135,7 @@ export const image = async (req, res) => {
     const project = req.body;
     const body = project.jsonBody;
     const db = await Channel.find({ project: `${body}`, type: "GUPSHUP" });
+    const appname = db[0].appname;
     const id = db[0].appIdGushup.toString(); // Conviértelo a cadena si aún no lo es
     const file = req.file;
     const formData = new FormData();
@@ -134,7 +159,7 @@ export const image = async (req, res) => {
 
     // Puedes enviar una respuesta al frontend si es necesario
     const s3Uploader = new S3Uploader();
-    const s3Response = await s3Uploader.uploadFile(file);
+    const s3Response = await s3Uploader.uploadFile(file,appname);
     res.json({ mediaId: response.data.mediaId, urlAWS: s3Response.Location });
   } catch (error) {
     console.error("Error al subir la imagen al backend:", error);
@@ -148,6 +173,30 @@ export const postTemplateImage = async (req) => {
     const db = await Channel.find({ project: `${project}`, type: "GUPSHUP" });
     const id = db[0].appIdGushup;
     console.log(id);
+
+    const { idGupshup, title } = req.body.campaignTemplate.variables;
+
+    // Verificar si el idGupshup ya existe en la base de datos
+    const existingIdGupshup = await Template.findOne({ idGupshup });
+
+    if (existingIdGupshup) {
+      return {
+        success: false,
+        message:
+          "El idGupshup ya existe en la base de datos. No se puede enviar la plantilla a Gupshup.",
+      };
+    }
+
+    // Verificar si el title ya existe en la base de datos
+    const existingTitle = await Template.findOne({ title });
+
+    if (existingTitle) {
+      return {
+        success: false,
+        message:
+          "El title ya existe en la base de datos. No se puede enviar la plantilla a Gupshup.",
+      };
+    }
     const idImage = req.body.campaignTemplate.variables.mediaId;
     const apiImage = await axios.get(
       `https://api.gupshup.io/wa/${id}/wa/media/${idImage}?download=false`
@@ -193,9 +242,9 @@ export const postTemplateImage = async (req) => {
         }
       );
 
-      console.log(apiResponse.data);
+      console.log(apiResponse.data.template.status);
 
-      if(apiResponse.data.status !== "success") {
+      if (apiResponse.data.status !== "success") {
         return {
           success: false,
           message: "Failed to post template image",
@@ -210,7 +259,6 @@ export const postTemplateImage = async (req) => {
         const { title } = req.body.campaignTemplate.variables;
         const { idGupshup } = req.body.campaignTemplate.variables;
         const url = req.body.campaignTemplate.url;
-
         const secondApiResponse = await axios.post(
           `${process.env.AGENTE_CHAT}`,
           {
@@ -219,14 +267,15 @@ export const postTemplateImage = async (req) => {
               type: "IMAGE",
               message: ` ${contentFromReqBody}`,
               project: `${project}`,
-              url: `${url}`,
               externalIntegrationInfo: {
                 id: firstApiTemplateId,
                 params: ["Pruebas", "pruebas@correo.com"],
               },
+              mediaInfo: {},
               title: `${title}`,
               idGupshup: `${idGupshup}`,
               publicUrl: `${url}`,
+              status: `PENDING`,
             },
           },
           {
@@ -282,7 +331,6 @@ export const getTemplate = async (req, res) => {
 
     if (channel && channel.length > 0) {
       const appname = channel[0].appname;
-      console.log(appname);
       const headers = {
         apikey: `${process.env.API_KEY_GUPSHUP}`,
       };
@@ -391,5 +439,74 @@ export const getTemplate = async (req, res) => {
       error
     );
     res.status(500).json({ error: "Error interno del servidor" });
+  }
+};
+
+export const getByUpdateStatus = async (req, res) => {
+  try {
+    const { project } = req.body.campaignTemplate.project;
+    const channel = await Channel.find({
+      project: `${project}`,
+      type: 'GUPSHUP',
+    });
+
+    if (channel && channel.length > 0) {
+      const appname = channel[0].appname;
+      const headers = {
+        apikey: `${process.env.API_KEY_GUPSHUP}`,
+      };
+      const externalApiResponse = await axios.get(
+        `${process.env.GET_TEMPLATE}${appname}`,
+        { headers }
+      );
+
+      console.log(externalApiResponse.data.templates);
+
+      if (externalApiResponse.data.templates.length > 0) {
+        let dbResults;
+
+        dbResults = await CampaignTemplate.find({
+          project: `${project}`,
+        });
+
+        const extractedData = dbResults.map(
+          ({ idGupshup, externalIntegrationInfo }) => ({
+            idGupshup,
+            externalIntegrationInfo,
+          })
+        );
+
+        for (const template of externalApiResponse.data.templates) {
+          const dbTemplate = extractedData.find(
+            (item) => item.idGupshup === template.elementName
+          );
+
+          if (dbTemplate) {
+            const { project } = req.body.campaignTemplate.project;
+            // Agregar la query de actualización aquí
+            await CampaignTemplate.updateOne(
+              {
+                project: `${project}`, // Convierte a ObjectId
+                externalIntegrationInfo: dbTemplate.externalIntegrationInfo,
+              },
+              {
+                $set: {
+                  status: template.status,
+                },
+              }
+            );
+          } else {
+            console.error(`No se encontró una plantilla para ${template.elementName}`);
+          }
+        }
+
+        res.status(200).json({ message: 'Actualización exitosa' });
+      } else {
+        res.status(404).json({ error: 'No se encontraron plantillas' });
+      }
+    }
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ error: 'Error en el servidor' });
   }
 };

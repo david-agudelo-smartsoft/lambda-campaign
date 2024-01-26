@@ -44,6 +44,10 @@ const campaignTemplateSchema = new Schema(
         title: {
             type: String,
             required: false
+        },
+        status: {
+            type: String,
+            required: false
         }
     },
     {

@@ -5,33 +5,11 @@ import Template from "../../models/template.model.js";
 export const postTemplateImage = async (req, res) => {
   try {
     const { project } = req.body.campaignTemplate.project;
+
+    console.log(project);
     const db = await Channel.find({ project: `${project}`, type: "GUPSHUP" });
     const id = db[0].appIdGushup;
     console.log(id);
-
-    const { idGupshup, title } = req.body.campaignTemplate.variables;
-
-    // Verificar si el idGupshup ya existe en la base de datos
-    const existingIdGupshup = await Template.findOne({ idGupshup });
-
-    if (existingIdGupshup) {
-      return {
-        success: false,
-        message:
-          "El idGupshup ya existe en la base de datos. No se puede enviar la plantilla a Gupshup.",
-      };
-    }
-
-    // Verificar si el title ya existe en la base de datos
-    const existingTitle = await Template.findOne({ title });
-
-    if (existingTitle) {
-      return {
-        success: false,
-        message:
-          "El title ya existe en la base de datos. No se puede enviar la plantilla a Gupshup.",
-      };
-    }
     const idImage = req.body.campaignTemplate.variables.mediaId;
     const apiImage = await axios.get(
       `https://api.gupshup.io/wa/${id}/wa/media/${idImage}?download=false`
@@ -51,8 +29,6 @@ export const postTemplateImage = async (req, res) => {
         mediaId,
         exampleHeader,
       } = req.body.campaignTemplate.variables;
-
-      console.log(req.body.campaignTemplate.variables);
 
       const apiResponse = await axios.post(
         `https://api.gupshup.io/wa/app/${id}/template`,
@@ -77,13 +53,8 @@ export const postTemplateImage = async (req, res) => {
         }
       );
 
-      console.log(apiResponse.data.template.status);
-
       if (apiResponse.data.status !== "success") {
-        return {
-          success: false,
-          message: "Failed to post template image",
-        };
+        return { error: "Failed to post template image" };
       }
 
       if (apiResponse.data.status === "success") {
@@ -94,6 +65,7 @@ export const postTemplateImage = async (req, res) => {
         const { title } = req.body.campaignTemplate.variables;
         const { idGupshup } = req.body.campaignTemplate.variables;
         const url = req.body.campaignTemplate.url;
+
         const secondApiResponse = await axios.post(
           `${process.env.AGENTE_CHAT}`,
           {
@@ -102,15 +74,15 @@ export const postTemplateImage = async (req, res) => {
               type: "IMAGE",
               message: ` ${contentFromReqBody}`,
               project: `${project}`,
+              mediaInfo:{},
               externalIntegrationInfo: {
                 id: firstApiTemplateId,
                 params: ["Pruebas", "pruebas@correo.com"],
               },
-              mediaInfo:{},
               title: `${title}`,
               idGupshup: `${idGupshup}`,
               publicUrl: `${url}`,
-              status: `PENDING`,
+              status: "PENDING",
             },
           },
           {
@@ -121,36 +93,21 @@ export const postTemplateImage = async (req, res) => {
           }
         );
 
-        console.log("La segunda API respondió:", secondApiResponse.data);
-
-        return {
-          success: true,
-          message: "Template image posted successfully",
-        };
-      } else {
-        console.error(
-          "La primera API respondió con un error:",
-          apiResponse.data.error
-        );
-        return {
-          success: false,
-          message: "Failed to post template image",
-          error: apiResponse.data.error,
-        };
+        return { message: 'plantilla creada con exito' , status:200} ;
       }
-    } else {
-      console.error(
-        "La primera API respondió con un error:",
-        apiImage.data.error
-      );
-      return {
-        success: false,
-        message: "Failed to retrieve image from GUPSHUP API",
-        error: apiImage.data.error,
-      };
     }
   } catch (error) {
-    console.error("Error al realizar la solicitud a la API externa:", error);
-    throw new Error("Error interno del servidor: " + error.message);
+    console.error(error);
+
+    if (error.response && error.response.data.message === 'Template Already exists with same namespace and elementName and languageCode') {
+      return { message: 'el template ya existe' ,status:415 };
+    }
+
+    if (error.response && error.response.data.message === 'Invalid element name provided') {
+      return { message: 'el nombre no es valido',status:415 };
+    }
+    if(error.response && error.response.data.message === 'Cannot Process Request Now' )
+    return { message: 'La imagen no es valida',status:500 };
   }
+  return {message:'intenta nuevamente' }
 };

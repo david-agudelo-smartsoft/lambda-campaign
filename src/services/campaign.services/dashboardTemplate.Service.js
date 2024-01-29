@@ -135,6 +135,7 @@ export const getDashboardTemplate = async (req) => {
         ]);
         return result;
     } catch (error) {
-        return res.status(500).json({ message: error.message });
+        throw error;
+        // return res.status(500).json({ message: error.message });
     }
 };

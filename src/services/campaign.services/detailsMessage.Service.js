@@ -108,23 +108,23 @@ export const getDetailsMessage = async (req) => {
                     },
                 },
             },
-            {
-                $addFields: {
-                    "channelDatetime": {
-                        $cond: {
-                            if: { $eq: [{ $type: { $toDate: "$eventDoc.timestamp" } }, "date"] },
-                            then: {
-                                $dateToString: {
-                                    format: "%Y-%m-%d %H:%M:%S",
-                                    date: { $toDate: "$eventDoc.timestamp" },
-                                    timezone: "America/Bogota",
-                                },
-                            },
-                            else: null,
-                        },
-                    },
-                },
-            },
+            // {
+            //     $addFields: {
+            //         "channelDatetime": {
+            //             $cond: {
+            //                 if: { $eq: [{ $type: { $toDate: "$eventDoc.timestamp" } }, "date"] },
+            //                 then: {
+            //                     $dateToString: {
+            //                         format: "%Y-%m-%d %H:%M:%S",
+            //                         date: { $toDate: "$eventDoc.timestamp" },
+            //                         timezone: "America/Bogota",
+            //                     },
+            //                 },
+            //                 else: null,
+            //             },
+            //         },
+            //     },
+            // },
             {
                 $project: {
                     "_id": 0,
@@ -156,13 +156,13 @@ export const getDetailsMessage = async (req) => {
                             else: "N/A",
                         },
                     },
-                    "channelDatetime": {
-                        $cond: {
-                            if: { $eq: ["$messageDoc.status", "SUCCESFULLY_SEND"] },
-                            then: "$channelDatetime",
-                            else: "N/A",
-                        },
-                    },
+                    // "channelDatetime": {
+                    //     $cond: {
+                    //         if: { $eq: ["$messageDoc.status", "SUCCESFULLY_SEND"] },
+                    //         then: "$channelDatetime",
+                    //         else: "N/A",
+                    //     },
+                    // },
                     "titleTemplate": "$templateDoc.title",
                     "IdCampana": "$_id",
                     "createdAtCampaing": "$createdAt",
@@ -170,8 +170,10 @@ export const getDetailsMessage = async (req) => {
                 },
             },
         ]);
+        console.log(result)
         return result
     } catch (error) {
-        return res.status(500).json({ message: error.message });
+        throw error;
+        // return res.status(500).json({ message: error.message });
     }
 };

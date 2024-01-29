@@ -1,10 +1,11 @@
-import OutboundCampaign from "../models/campaign.model.js";
+import OutboundCampaign from "../../models/campaign.model.js";
 import { ObjectId } from 'mongodb';
 import moment from 'moment-timezone';
 
-export const getDetailsMessage = async (req) => {
+export const getDetailsMessageStatus = async (req) => {
     try {
-        const { initDate, finalDate, projectId, campaignTemplateId } = req.body;
+        const { initDate, finalDate, projectId, campaignTemplateId, channelCheck } = req.body;
+
         // Ajustar la fecha de inicio para comenzar desde las 00:00:00 GMT-5
         const adjustedInitDate = moment(initDate).tz('America/Bogota').startOf('day');
         console.log(adjustedInitDate);
@@ -14,7 +15,6 @@ export const getDetailsMessage = async (req) => {
         console.log(adjustedFinalDate);
 
         console.log(req.body);
-
         const result = await OutboundCampaign.aggregate([
             {
                 $match: {
@@ -170,7 +170,12 @@ export const getDetailsMessage = async (req) => {
                 },
             },
         ]);
-        return result
+        let filteredResult = result;
+        if (channelCheck) {
+            const allowedChannelChecks = Array.isArray(channelCheck) ? channelCheck : [channelCheck.toLowerCase()];
+            filteredResult = filteredResult.filter(item => allowedChannelChecks.includes(item.channelCheck.toLowerCase()));
+        }
+        return filteredResult;
     } catch (error) {
         return res.status(500).json({ message: error.message });
     }

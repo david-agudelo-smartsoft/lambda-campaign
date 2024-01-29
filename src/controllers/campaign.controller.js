@@ -1,6 +1,6 @@
-import { getDashboardTemplate } from "../services/dashboardTemplate.Service.js";
-import { getDetailsMessage } from "../services/detailsMessage.Service.js";
-import { getDetailsMessageStatus } from "../services/detailsMessageStatus.Service.js";
+import { getDashboardTemplate } from "../services/campaign.services/dashboardTemplate.Service.js";
+import { getDetailsMessage } from "../services/campaign.services/detailsMessage.Service.js";
+import { getDetailsMessageStatus } from "../services/campaign.services/detailsMessageStatus.Service.js";
 
 
 export const Detailsmessage = async (req, res) => {

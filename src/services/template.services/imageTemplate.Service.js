@@ -1,7 +1,7 @@
 import axios from "axios";
 import Channel from "../../models/channel.model.js";
 import { Blob } from "buffer";
-import { S3Uploader } from "../s3.service.js";
+import { S3Uploader } from "./s3.service.js";
 
 export const image = async (req, res) => {
     const project = req.body;

@@ -1,4 +1,4 @@
-import OutboundCampaign from "../models/campaign.model.js";
+import OutboundCampaign from "../../models/campaign.model.js";
 import { ObjectId } from 'mongodb';
 import moment from 'moment-timezone';
 

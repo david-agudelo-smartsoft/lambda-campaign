@@ -41,10 +41,13 @@ export const postTemplateText = async (req, res) => {
 
     if (apiResponse.data.status !== "success") {
       // Agregar esta lógica para manejar el error específico
-      if (apiResponse.data.status === "error" && apiResponse.data.message.includes("Template Already exists")) {
+      if (
+        apiResponse.data.status === "error" &&
+        apiResponse.data.message.includes("Template Already exists")
+      ) {
         return res.status(400).json({
           success: false,
-          message: 'Template Already exists - ya existe',
+          message: "Template Already exists - ya existe",
         });
       }
 
@@ -84,20 +87,30 @@ export const postTemplateText = async (req, res) => {
           Authorization: `${token}`,
         },
       }
-    );     
-    return { message: 'plantilla creada con exito' , status:200} ;
-
-    } catch (error) {
-      console.error(error);
-  
-      if (error.response && error.response.data.message === 'Template Already exists with same namespace and elementName and languageCode') {
-        return { message: 'el template ya existe' ,status:415 };
-      }
-  
-      if (error.response && error.response.data.message === 'Invalid element name provided') {
-        return { message: 'el nombre no es valido',status:415 };
-      }
-  
-      return { message: 'Error al procesar la solicitud',status:500 };
+    );
+    if (secondApiResponse.status === 200) {
+      return { message: "plantilla creada con exito", status: 200 };
+    } else {
+      return { message: "error al crear la plantilla", status: 500 };
     }
-  };
+  } catch (error) {
+    console.error(error);
+
+    if (
+      error.response &&
+      error.response.data.message ===
+        "Template Already exists with same namespace and elementName and languageCode"
+    ) {
+      return { message: "el template ya existe", status: 415 };
+    }
+
+    if (
+      error.response &&
+      error.response.data.message === "Invalid element name provided"
+    ) {
+      return { message: "el nombre no es valido", status: 415 };
+    }
+
+    return { message: "Error al procesar la solicitud", status: 500 };
+  }
+};

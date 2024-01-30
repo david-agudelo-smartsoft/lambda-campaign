@@ -5,11 +5,8 @@ import Template from "../../models/template.model.js";
 export const postTemplateImage = async (req, res) => {
   try {
     const { project } = req.body.campaignTemplate.project;
-
-    console.log(project);
     const db = await Channel.find({ project: `${project}`, type: "GUPSHUP" });
     const id = db[0].appIdGushup;
-    console.log(id);
     const idImage = req.body.campaignTemplate.variables.mediaId;
     const apiImage = await axios.get(
       `https://api.gupshup.io/wa/${id}/wa/media/${idImage}?download=false`
@@ -66,6 +63,12 @@ export const postTemplateImage = async (req, res) => {
         const { idGupshup } = req.body.campaignTemplate.variables;
         const url = req.body.campaignTemplate.url;
 
+        const apiImage = await axios.head(`${url}`);
+        const filename = apiImage.config.url
+        const urlPrefixToRemove = `${process.env.REMPLACE}`;
+        const result = filename.replace(urlPrefixToRemove, '');
+        const filenameWithoutPrefix = result;
+
         const secondApiResponse = await axios.post(
           `${process.env.AGENTE_CHAT}`,
           {
@@ -74,7 +77,11 @@ export const postTemplateImage = async (req, res) => {
               type: "IMAGE",
               message: ` ${contentFromReqBody}`,
               project: `${project}`,
-              mediaInfo:{},
+              mediaInfo: {
+                filename: `${filenameWithoutPrefix}`,
+                fileSize: `${apiImage.headers["content-length"]}`,
+                mimetype: `${apiImage.headers["content-type"]}`,
+              },
               externalIntegrationInfo: {
                 id: firstApiTemplateId,
                 params: ["Pruebas", "pruebas@correo.com"],
@@ -93,21 +100,35 @@ export const postTemplateImage = async (req, res) => {
           }
         );
 
-        return { message: 'plantilla creada con exito' , status:200} ;
+        if (secondApiResponse.status === 200) {
+          return { message: "plantilla creada con exito", status: 200 };
+        } else {
+          return { message: "error al crear la plantilla", status: 500 };
+        }
       }
     }
   } catch (error) {
     console.error(error);
 
-    if (error.response && error.response.data.message === 'Template Already exists with same namespace and elementName and languageCode') {
-      return { message: 'el template ya existe' ,status:415 };
+    if (
+      error.response &&
+      error.response.data.message ===
+        "Template Already exists with same namespace and elementName and languageCode"
+    ) {
+      return { message: "el template ya existe", status: 415 };
     }
 
-    if (error.response && error.response.data.message === 'Invalid element name provided') {
-      return { message: 'el nombre no es valido',status:415 };
+    if (
+      error.response &&
+      error.response.data.message === "Invalid element name provided"
+    ) {
+      return { message: "el nombre no es valido", status: 415 };
     }
-    if(error.response && error.response.data.message === 'Cannot Process Request Now' )
-    return { message: 'La imagen no es valida',status:500 };
+    if (
+      error.response &&
+      error.response.data.message === "Cannot Process Request Now"
+    )
+      return { message: "La imagen no es valida", status: 500 };
   }
-  return {message:'intenta nuevamente' }
+  return { message: "intenta nuevamente" };
 };

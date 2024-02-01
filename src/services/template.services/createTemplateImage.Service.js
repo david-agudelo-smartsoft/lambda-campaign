@@ -63,11 +63,21 @@ export const postTemplateImage = async (req, res) => {
         const { idGupshup } = req.body.campaignTemplate.variables;
         const url = req.body.campaignTemplate.url;
 
+
         const apiImage = await axios.head(`${url}`);
+
+        const channel = await Channel.find({
+          project: `${project}`,
+          type: "GUPSHUP",
+        });
+    
+        const appname = channel[0].appname;
+
         const filename = apiImage.config.url
-        const urlPrefixToRemove = `${process.env.REMPLACE}`;
+        const urlPrefixToRemove = `${process.env.REMPLACE}${appname}/`;
         const result = filename.replace(urlPrefixToRemove, '');
         const filenameWithoutPrefix = result;
+        console.log(filenameWithoutPrefix);
 
         const secondApiResponse = await axios.post(
           `${process.env.AGENTE_CHAT}`,

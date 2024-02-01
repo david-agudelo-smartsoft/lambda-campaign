@@ -34,13 +34,14 @@ export const getTemplate = async (req) => {
     
               // Extraer la información necesaria de la segunda plantilla (base de datos)
               const extractedData = dbResults.map(
-                ({ message, type, idGupshup, publicUrl, createdAt, title }) => ({
+                ({ message, type, idGupshup, publicUrl, createdAt, updatedAt , title }) => ({
                   message,
                   type,
                   idGupshup,
                   publicUrl,
                   createdAt,
                   title,
+                  updatedAt
                 })
               );
     
@@ -71,13 +72,14 @@ export const getTemplate = async (req) => {
     
               // Extraer la información necesaria de la segunda plantilla (base de datos)
               const extractedData = dbResults.map(
-                ({ message, type, idGupshup, publicUrl, createdAt, title }) => ({
+                ({ message, type, idGupshup, publicUrl, createdAt, updatedAt, title }) => ({
                   message,
                   type,
                   idGupshup,
                   publicUrl,
                   createdAt,
                   title,
+                  updatedAt
                 })
               );
     

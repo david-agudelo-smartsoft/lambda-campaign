@@ -77,8 +77,6 @@ export const postTemplateImage = async (req, res) => {
         const urlPrefixToRemove = `${process.env.REMPLACE}${appname}/`;
         const result = filename.replace(urlPrefixToRemove, '');
         const filenameWithoutPrefix = result;
-        console.log(filenameWithoutPrefix);
-
         const secondApiResponse = await axios.post(
           `${process.env.AGENTE_CHAT}`,
           {

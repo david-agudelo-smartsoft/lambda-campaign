@@ -5,9 +5,9 @@ import AWS from "aws-sdk";
 export class S3Uploader {
   constructor() {
     AWS.config.update({
-      accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-      secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
-      region: process.env.AWS_REGION,
+      accessKeyId: process.env.BOT_ACCESS_KEY_ID,
+      secretAccessKey: process.env.BOT_SECRET_ACCESS_KEY,
+      region: process.env.BOT_REGION,
     });
 
     this.s3 = new AWS.S3();
@@ -17,10 +17,13 @@ export class S3Uploader {
     try {
         const s3Response = await this.s3
         .upload({
-          Bucket: process.env.AWS_BUCKET_NAME,
+          Bucket: process.env.BOT_BUCKET_NAME,
           Key: `templates-image/${appname}/${file.originalname}`,
           Body: file.buffer,
-          ContentType: file.mimetype
+          ContentType: file.mimetype,
+          Metadata: {
+            firma: process.env.SECRET_KEY
+         }
         })
         .promise();
 
